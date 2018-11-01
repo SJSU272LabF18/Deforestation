@@ -10,9 +10,6 @@
 - Ketan Kodmelwar
 
 
-
-# Project Ideas:
-
 ## Predict deforestation due to expansion of roads/cities  - APPROVED
 comment: analytics should be actionable as I mentioned in the class.
 
