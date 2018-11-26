@@ -84,21 +84,20 @@
                     };
             
                   var USALayer = new FeatureLayer({
-                    url: "https://services9.arcgis.com/1Y7xLGjga1P93hYo/ArcGIS/rest/services/forestland/FeatureServer",
-                    
-                  });
-            
-                  var ForestLayer = new FeatureLayer({
                     url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/ArcGIS/rest/services/Roads/FeatureServer/0",
                     
                   });
             
-            
-                  var HighwayLayer = new FeatureLayer({
-                    url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Freeway_System/FeatureServer/2",
-                     renderer: hwyRenderer
-            
+                  var ForestLayer = new FeatureLayer({
+                    url: "https://services9.arcgis.com/1Y7xLGjga1P93hYo/ArcGIS/rest/services/forestland/FeatureServer",
                     
+                  });
+                  //"https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Freeway_System/FeatureServer/2" -- US all highway
+                  //"https://services9.arcgis.com/vLtU1Ayr9k880xPG/arcgis/rest/services/oregon_roads/FeatureServer" -- big file
+                  var HighwayLayer = new FeatureLayer({
+                    url: "https://services9.arcgis.com/1Y7xLGjga1P93hYo/arcgis/rest/services/tl_2014_41_prisecroads/FeatureServer", 
+                    renderer: hwyRenderer
+            
                   });
                   var symbol = {
                 type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
@@ -131,7 +130,7 @@
             
                   var map = new Map({
                     basemap: "hybrid",
-                    layers: [demographicGroupLayer]
+                    layers: [ForestLayer, HighwayLayer]
                   });
             
                   // Add the map to a MapView
