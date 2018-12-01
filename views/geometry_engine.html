@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+<title>Buffer</title>
+
+<link rel="stylesheet" href="https://js.arcgis.com/3.26/dijit/themes/claro/claro.css">
+<link rel="stylesheet" href="https://js.arcgis.com/3.26/esri/css/esri.css">
+<style>
+    html, body {
+      height: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    #map{
+      height: 80%;
+      width: 70%;
+      padding: 0;
+      margin: 0;
+    }
+    #leftPane{
+      width: 20%;
+    }
+    #layerListPane{
+    width:10%;
+    }
+    .esriLayerList .esriList{
+        border-top:none;
+    }
+    .esriLayerList .esriTitle {
+      background-color: #fff;
+      border-bottom:none;
+    }
+    .esriLayerList .esriList ul{
+      background-color: #fff;
+    }
+</style>
+
+<script src="https://js.arcgis.com/3.26/"></script>
+
+<!-- <script>
+  require(["esri/map","esri/arcgis/utils", "dojo/domReady!"], 
+  function(Map, arcgisUtils) {
+    map = new Map("map", {
+      basemap : "hybrid",
+      center : [-122.45, 37.75],
+      zoom : 13
+    })
+  });
+</script> -->
+<script>var dojoConfig = { parseOnLoad: true };</script>
+<script>
+  var map, tb;
+  
+  require([          
+          "dojo/dom",
+          "dojo/_base/array",
+          "dojo/parser",
+          "dojo/query",
+          "dojo/on",
+  
+          "esri/Color",
+          "esri/config",
+          "esri/map",
+          "esri/graphic",
+    
+          "esri/toolbars/draw",
+    
+          "esri/symbols/SimpleMarkerSymbol",
+          "esri/symbols/SimpleLineSymbol",
+          "esri/symbols/SimpleFillSymbol",
+          
+          "esri/arcgis/utils",
+          "esri/dijit/LayerList",
+          "esri/layers/FeatureLayer",
+          
+          "esri/geometry/geometryEngine", 
+          "esri/geometry/normalizeUtils",         
+          "esri/geometry/webMercatorUtils",
+          "esri/geometry/Point",
+
+          "dijit/layout/BorderContainer",
+          "dijit/layout/ContentPane",
+          "dijit/form/Button", 
+          "dojo/domReady!"
+          ],
+        function(dom, array, parser, query, on,
+                 Color, esriConfig, Map, Graphic,  
+                 Draw, 
+                 SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,
+                 arcgisUtils, LayerList, FeatureLayer, 
+                 geometryEngine, normalizeUtils, webMercatorUtils, Point ){
+  
+          parser.parse();
+  
+         //Setup button click handlers
+          on(dom.byId("clearGraphics"), "click", function(){
+            if(map){
+              map.graphics.clear();
+            }
+          });
+
+          // -------- check
+          on(dom.byId("check"), "click", function(){
+            console.log(ForestLayer.geometryProperties);
+            //get total forest area
+            dom.byId("forestArea").innerHTML = geometryEngine.planarArea(ForestLayer.graphics[0].geometry, "square-kilometers");
+          })
+
+          //click handler for the draw tool buttons
+          query(".tool").on("click", function(evt){
+            if(tb){
+             tb.activate(evt.target.id);
+            }
+          });
+
+          //-------------------------create map
+          map = new Map("map", {
+            basemap: "streets",
+            center: [-120.652, 43.646],
+            zoom: 7
+          });
+          var ForestLayer = new FeatureLayer("https://services9.arcgis.com/1Y7xLGjga1P93hYo/ArcGIS/rest/services/forestland/FeatureServer/0");
+          map.addLayer(ForestLayer);
+          
+          var HighwayLayer = new FeatureLayer("https://services9.arcgis.com/1Y7xLGjga1P93hYo/arcgis/rest/services/tl_2014_41_prisecroads/FeatureServer/0");
+          map.addLayer(HighwayLayer);
+          console.log("forest Layer: ");
+          console.log(ForestLayer);
+                    
+          map.on("load", initToolbar);
+       
+        //-------------------------Buffer
+        function initToolbar(evtObj) {
+          tb = new Draw(evtObj.map);
+          tb.on("draw-end", doBuffer);
+        }
+  
+        function doBuffer(evtObj) {
+          tb.deactivate();
+          var geometry = evtObj.geometry  // geometry to buffer
+          var symbol;
+          
+          switch (geometry.type) {  
+             case "point":
+               symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE, 10, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 1), new Color([0,255,0,0.25]));
+               break;
+             case "polyline":
+               symbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASH, new Color([255,0,0]), 1);
+               break;
+             case "polygon":
+               symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_NONE, new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASHDOT, new Color([255,0,0]), 2), new Color([255,255,0,0.25]));
+               break;
+          };
+  
+        //setup the buffer parameters
+        var graphic = new Graphic(geometry, symbol); //set geometry graphic
+        map.graphics.add(graphic);
+
+        var buffer_distance = [ dom.byId("distance").value ];
+        var buffer_unit = "kilometers"; //CHANGE THIS
+        var buffer_symbol = new SimpleFillSymbol(
+              SimpleFillSymbol.STYLE_SOLID,
+              new SimpleLineSymbol(
+                SimpleLineSymbol.STYLE_SOLID,
+                new Color([255,0,0,0.65]), 2
+              ),
+              new Color([255,0,0,0.35])
+            );
+            var buffSymFade = new SimpleFillSymbol(
+                SimpleFillSymbol.STYLE_SOLID, 
+                new SimpleLineSymbol(
+                    SimpleLineSymbol.STYLE_SOLID, 
+                    new Color([255, 255, 255, 0.4]), 10), null);
+
+        //geodesicBuffer
+        var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
+        map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
+        
+        //Intersect
+        var forestLayerGeometry = ForestLayer.graphics[0].geometry;
+        
+        if(geometryEngine.intersects(geoBuffer, forestLayerGeometry)){
+            var intersectGeometry = geometryEngine.intersect(geoBuffer, forestLayerGeometry);
+            map.graphics.add(new Graphic(intersectGeometry, buffSymFade));
+            console.log(intersectGeometry);
+
+            dom.byId("resultArea").innerHTML = geometryEngine.planarArea(intersectGeometry, "square-kilometers");
+        }
+        else{
+            dom.byId("resultArea").innerHTML = 0;
+        }
+    
+    
+        }   
+          
+          // perform buffer related operations here, as buffer now created
+          function showBuffer(bufferedGeometries) {
+            var symbol = new SimpleFillSymbol(
+              SimpleFillSymbol.STYLE_SOLID,
+              new SimpleLineSymbol(
+                SimpleLineSymbol.STYLE_SOLID,
+                new Color([255,0,0,0.65]), 2
+              ),
+              new Color([255,0,0,0.35])
+            );
+  
+            array.forEach(bufferedGeometries, function(geometry) {
+              console.log(bufferedGeometries);
+              var graphic = new Graphic(geometry, symbol);
+              map.graphics.add(graphic);
+
+            });
+          }
+
+         
+          //-------------------------show coordinates
+          map.on("load", function() {
+            //after map loads, connect to listen to mouse move & drag events
+            map.on("mouse-move", showCoordinates);
+            map.on("mouse-drag", showCoordinates);
+
+            function showCoordinates(evt) {
+              //the map is in web mercator but display coordinates in geographic (lat, long)
+              var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+              //display mouse coordinates
+              dom.byId("info").innerHTML = mp.x.toFixed(3) + ", " + mp.y.toFixed(3);
+            }
+          });
+
+        //------ Input Long, Lat from user and display point
+        var symbol = new SimpleMarkerSymbol(  
+                SimpleMarkerSymbol.STYLE_CIRCLE,  
+                15,  
+                new SimpleLineSymbol(  
+                    SimpleLineSymbol.STYLE_SOLID,  
+                    new Color([0, 0, 255, 0.5]),  
+                    8  
+                    ),  
+                new Color([0, 0, 255])  
+             );  
+      
+        on(dom.byId("go"), "click", coordinates);  
+
+        function coordinates() {  
+          console.log("got here")  
+            var lat = document.getElementById("sel_lat").value  
+            var long1 = document.getElementById("sel_long").value  
+            var mp = new Point(long1, lat);  
+            var graphic = new Graphic(mp, symbol);  
+            map.graphics.add(graphic);  
+        }  
+          
+  
+    });
+  </script>
+
+</head>
+
+
+<body class = "claro">
+<div data-dojo-type="dijit/layout/BorderContainer" 
+data-dojo-props="gutters:'true', design:'sidebar'" 
+style="width:100%;height:100%;">
+
+  <div id="layerListPane" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'right'">
+    <div id="layerList"></div>
+  </div>
+
+  <div id="map" 
+      data-dojo-type="dijit/layout/ContentPane" 
+      data-dojo-props="region:'center'">
+  </div>
+
+  <div id="leftPane" 
+      data-dojo-type="dijit/layout/ContentPane" 
+      data-dojo-props="region:'left'">
+    <div class="details">Pick a tool and draw on the map. The drawn graphic will be buffered based on the specified parameters.</div>
+    <button type="button" class="tool" id="line">Line</button>
+    <button type="button" class="tool" id="polyline">Polyline</button>
+    <button type="button" class="tool" id="freehandpolyline">Freehand Polyline</button>
+    <br/>
+    <button type="button" class="tool" id="polygon">Polygon</button>
+    <button type="button" class="tool" id="freehandpolygon">Freehand Polygon</button>
+    <br/><hr />
+    <div><b>Buffer Parameters</b></div>
+    Distance:&nbsp;<input type="text" id="distance" size="5" value="25" />
+    <select id="unit" style="width:100px;">
+      <option value="UNIT_STATUTE_MILE">Miles</option>
+      <option value="UNIT_FOOT">Feet</option>
+      <option value="UNIT_KILOMETER">Kilometers</option>
+      <option value="UNIT_METER">Meters</option>
+      <option value="UNIT_NAUTICAL_MILE">Nautical Miles</option>
+      <option value="UNIT_US_NAUTICAL_MILE">US Nautical Miles</option>
+      <option value="UNIT_DEGREE">Degrees</option>
+    </select><br />
+    <button type="button" id="clearGraphics">Clear Graphics</button>
+    <button type="button" id="check">check Test</button>
+  
+    <span id="info"></span>
+    
+    <br/><br/><hr/>
+    <div><b>Input coordinates</b></div>
+  <!-- INPUT LONG, LAT -->
+      Tag Long:<input id="sel_long" type="text">  
+      <br >  
+       Tag Lat:<input id="sel_lat" type="text">  
+      <br >  
+      <button id="go">GO</button>
+
+      <br/><br/><hr/>
+      <div><b>Total forest area: </b> <span id="forestArea"></span> sq. km.</div>
+    <div><b>Area of intersection: </b> <span id="resultArea"></span> sq. km.</div>
+  
+
+</div>
+
+</body>
+
+
+</html>
