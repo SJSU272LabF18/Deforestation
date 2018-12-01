@@ -117,7 +117,7 @@
 
           //-------------------------create map
           map = new Map("map", {
-            basemap: "streets",
+            basemap: "satellite",
             center: [-120.652, 43.646],
             zoom: 7
           });
@@ -178,6 +178,9 @@
         var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
         map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
         
+        //buffer calculations
+        dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, "square-kilometers");
+        dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, "kilometers");
         //Intersect
         var forestLayerGeometry = ForestLayer.graphics[0].geometry;
         
@@ -311,6 +314,8 @@ style="width:100%;height:100%;">
 
       <br/><br/><hr/>
       <div><b>Total forest area: </b> <span id="forestArea"></span> sq. km.</div>
+      <div><b>Total buffer area: </b> <span id="bufferArea"></span> sq. km.</div>
+      <div><b>Total buffer length: </b> <span id="bufferLength"></span> km.</div>
     <div><b>Area of intersection: </b> <span id="resultArea"></span> sq. km.</div>
   
 
