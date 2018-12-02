@@ -168,7 +168,7 @@
         map.graphics.add(graphic);
 
         var buffer_distance = [ dom.byId("distance").value ];
-        var buffer_unit = "kilometers"; //CHANGE THIS
+        var buffer_unit = dom.byId("unit").value; 
         var buffer_symbol = new SimpleFillSymbol(
               SimpleFillSymbol.STYLE_SOLID,
               new SimpleLineSymbol(
@@ -187,9 +187,11 @@
         var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
         map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
         
-        //buffer calculations
-        dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, "square-kilometers");
-        dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, "kilometers");
+        //buffer calculations       
+        var bufferAreaUnit = dom.byId("area-unit").value;
+        var bufferLengthUnit = dom.byId("unit").value;
+        dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, bufferAreaUnit) + " "+bufferAreaUnit;
+        dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, bufferLengthUnit)+ " "+bufferLengthUnit;;
         //Intersect
         var forestLayerGeometry = ForestLayer.graphics[0].geometry;
         
@@ -198,7 +200,7 @@
             map.graphics.add(new Graphic(intersectGeometry, buffSymFade));
             console.log(intersectGeometry);
 
-            dom.byId("resultArea").innerHTML = geometryEngine.planarArea(intersectGeometry, "square-kilometers");
+            dom.byId("resultArea").innerHTML = geometryEngine.planarArea(intersectGeometry, bufferAreaUnit) + " "+bufferAreaUnit;
         }
         else{
             dom.byId("resultArea").innerHTML = 0;
@@ -349,32 +351,43 @@ style="width:100%;height:100%;">
     <br/><hr />
     <div><b>Buffer Parameters</b></div>
     Distance:&nbsp;<input type="text" id="distance" size="5" value="25" />
-    <select class="btn btn-primary mt-2 tool" id="unit" style="width:100px;">
-      <option value="UNIT_STATUTE_MILE">Miles</option>
-      <option value="UNIT_FOOT">Feet</option>
-      <option value="UNIT_KILOMETER">Kilometers</option>
-      <option value="UNIT_METER">Meters</option>
-      <option value="UNIT_NAUTICAL_MILE">Nautical Miles</option>
-      <option value="UNIT_US_NAUTICAL_MILE">US Nautical Miles</option>
-      <option value="UNIT_DEGREE">Degrees</option>
+    <select class="btn btn-primary mt-2" id="unit" style="width:100px;">
+      <option value="meters">Meters</option>
+      <option value="feet">Feet</option>
+      <option value="kilometers" selected>Kilometers</option>
+      <option value="miles">Miles</option>
+      <option value="nautical-miles">Nautical Miles</option>
+      <option value="yards">Yards</option>
     </select><br />
-    <button class="btn btn-primary mt-2 tool" type="button" id="clearGraphics" style="height:25px; padding-bottom: 25px">Clear Graphics</button>
+    <button class="btn btn-primary mt-2" type="button" id="clearGraphics" style="height:25px; padding-bottom: 25px">Clear Graphics</button>
     <button type="button" id="check">check Test</button>
     <span id="info"></span>
     <hr/>
     <div><b>Input coordinates</b></div>
   <!-- INPUT LONG, LAT -->
       Tag Long:<input id="sel_long" type="text">  
-      <br >  
+      <br>  
        Tag Lat:<input id="sel_lat" type="text">  
-      <br >  
+      <br>  
       <button id="go">GO</button>
 
-      <br/><br/><hr/>
-      <div><b>Total forest area: </b> <span id="forestArea"></span> sq. km.</div>
-      <div><b>Total buffer area: </b> <span id="bufferArea"></span> sq. km.</div>
-      <div><b>Total buffer length: </b> <span id="bufferLength"></span> km.</div>
-    <div><b>Area of intersection: </b> <span id="resultArea"></span> sq. km.</div>
+      <br/><hr/><br/>
+      <div><b>Output Area unit: </b></div>
+      <select class="btn btn-primary mt-2" id="area-unit">
+      <option value="acres">acres</option>
+      <option value="hectares">hectares</option>
+      <option value="square-feet" >square feet</option>
+      <option value="square-meters">square meters</option>
+      <option value="square-yards">square-yards</option>
+      <option value="square-kilometers" selected>square kilometers</option>
+      <option value="square-miles">square miles</option>
+    </select>
+    <br/><hr/><br/>
+    <div><b>Results: </b></div>
+      <div><b>Total forest area: </b> <span id="forestArea"></span> </div>
+      <div><b>Total buffer area: </b> <span id="bufferArea"></span> </div>
+      <div><b>Total buffer length: </b> <span id="bufferLength"></span> </div>
+    <div><b>Area of intersection: </b> <span id="resultArea"></span> </div>
 
 
     <ul class="navbar-nav" style="margin-top:50px;">
