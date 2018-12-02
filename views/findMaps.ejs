@@ -64,7 +64,6 @@
   
   require([          
           "dojo/dom",
-  
           "dojo/_base/array",
           "dojo/parser",
           "dojo/query",
@@ -74,10 +73,6 @@
           "esri/config",
           "esri/map",
           "esri/graphic",
-  
-          "esri/geometry/normalizeUtils",
-          "esri/tasks/GeometryService",
-          "esri/tasks/BufferParameters",
     
           "esri/toolbars/draw",
     
@@ -89,23 +84,24 @@
           "esri/dijit/LayerList",
           "esri/layers/FeatureLayer",
           
+          "esri/geometry/geometryEngine", 
+          "esri/geometry/normalizeUtils",         
           "esri/geometry/webMercatorUtils",
           "esri/geometry/Point",
+
           "dijit/layout/BorderContainer",
           "dijit/layout/ContentPane",
           "dijit/form/Button", 
           "dojo/domReady!"
           ],
-        function(dom, array, parser, query, on, Color, esriConfig, Map, Graphic, normalizeUtils, GeometryService, BufferParameters, Draw, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,
-                 arcgisUtils, LayerList, FeatureLayer,
-                 webMercatorUtils, Point ){
+        function(dom, array, parser, query, on,
+                 Color, esriConfig, Map, Graphic,  
+                 Draw, 
+                 SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,
+                 arcgisUtils, LayerList, FeatureLayer, 
+                 geometryEngine, normalizeUtils, webMercatorUtils, Point ){
   
           parser.parse();
-          esriConfig.defaults.geometryService = new GeometryService("https://utility.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
-  
-          esriConfig.defaults.io.proxyUrl = "/proxy/";
-          esriConfig.defaults.io.alwaysUseProxy = false;
-  
   
          //Setup button click handlers
           on(dom.byId("clearGraphics"), "click", function(){
@@ -113,22 +109,24 @@
               map.graphics.clear();
             }
           });
+
+          // -------- check
+          on(dom.byId("check"), "click", function(){
+            console.log(ForestLayer.geometryProperties);
+            //get total forest area
+            dom.byId("forestArea").innerHTML = geometryEngine.planarArea(ForestLayer.graphics[0].geometry, "square-kilometers");
+          })
+
           //click handler for the draw tool buttons
           query(".tool").on("click", function(evt){
             if(tb){
              tb.activate(evt.target.id);
             }
           });
-           // add layers
-           
-            
-          // var HighwayLayer = new FeatureLayer({
-          //   url: "https://services9.arcgis.com/1Y7xLGjga1P93hYo/arcgis/rest/services/tl_2014_41_prisecroads/FeatureServer", 
-            
-          //   }); //renderer: hwyRenderer
+
           //-------------------------create map
           map = new Map("map", {
-            basemap: "streets",
+            basemap: "satellite",
             center: [-120.652, 43.646],
             zoom: 7
           });
@@ -137,11 +135,11 @@
           
           var HighwayLayer = new FeatureLayer("https://services9.arcgis.com/1Y7xLGjga1P93hYo/arcgis/rest/services/tl_2014_41_prisecroads/FeatureServer/0");
           map.addLayer(HighwayLayer);
-          
-          // map.center([-82.44109, 35.6122]); 
-          
+          console.log("forest Layer: ");
+          console.log(ForestLayer);
+                    
           map.on("load", initToolbar);
-        
+       
         //-------------------------Buffer
         function initToolbar(evtObj) {
           tb = new Draw(evtObj.map);
@@ -150,9 +148,10 @@
   
         function doBuffer(evtObj) {
           tb.deactivate();
-          var geometry = evtObj.geometry
+          var geometry = evtObj.geometry  // geometry to buffer
           var symbol;
-          switch (geometry.type) {
+          
+          switch (geometry.type) {  
              case "point":
                symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE, 10, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 1), new Color([0,255,0,0.25]));
                break;
@@ -162,34 +161,53 @@
              case "polygon":
                symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_NONE, new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASHDOT, new Color([255,0,0]), 2), new Color([255,255,0,0.25]));
                break;
-          }
+          };
   
-            var graphic = new Graphic(geometry, symbol);
-            map.graphics.add(graphic);
-  
-            //setup the buffer parameters
-            var params = new BufferParameters();
-            params.distances = [ dom.byId("distance").value ];
-            params.outSpatialReference = map.spatialReference;
-            params.unit = GeometryService[dom.byId("unit").value];
-            
-            //normalize the geometry 
-            normalizeUtils.normalizeCentralMeridian([geometry]).then(function(normalizedGeometries){
-              var normalizedGeometry = normalizedGeometries[0];
-              if (normalizedGeometry.type === "polygon") {
-                //if geometry is a polygon then simplify polygon.  This will make the user drawn polygon topologically correct.
-                esriConfig.defaults.geometryService.simplify([normalizedGeometry], function(geometries) {
-                  params.geometries = geometries;
-                  esriConfig.defaults.geometryService.buffer(params, showBuffer);
-                });
-              } else {
-                params.geometries = [normalizedGeometry];
-                esriConfig.defaults.geometryService.buffer(params, showBuffer);
-              }
-  
-            });
-          }
-  
+        //setup the buffer parameters
+        var graphic = new Graphic(geometry, symbol); //set geometry graphic
+        map.graphics.add(graphic);
+
+        var buffer_distance = [ dom.byId("distance").value ];
+        var buffer_unit = "kilometers"; //CHANGE THIS
+        var buffer_symbol = new SimpleFillSymbol(
+              SimpleFillSymbol.STYLE_SOLID,
+              new SimpleLineSymbol(
+                SimpleLineSymbol.STYLE_SOLID,
+                new Color([255,0,0,0.65]), 2
+              ),
+              new Color([255,0,0,0.35])
+            );
+            var buffSymFade = new SimpleFillSymbol(
+                SimpleFillSymbol.STYLE_SOLID, 
+                new SimpleLineSymbol(
+                    SimpleLineSymbol.STYLE_SOLID, 
+                    new Color([255, 255, 255, 0.4]), 10), null);
+
+        //geodesicBuffer
+        var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
+        map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
+        
+        //buffer calculations
+        dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, "square-kilometers");
+        dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, "kilometers");
+        //Intersect
+        var forestLayerGeometry = ForestLayer.graphics[0].geometry;
+        
+        if(geometryEngine.intersects(geoBuffer, forestLayerGeometry)){
+            var intersectGeometry = geometryEngine.intersect(geoBuffer, forestLayerGeometry);
+            map.graphics.add(new Graphic(intersectGeometry, buffSymFade));
+            console.log(intersectGeometry);
+
+            dom.byId("resultArea").innerHTML = geometryEngine.planarArea(intersectGeometry, "square-kilometers");
+        }
+        else{
+            dom.byId("resultArea").innerHTML = 0;
+        }
+    
+    
+        }   
+          
+          // perform buffer related operations here, as buffer now created
           function showBuffer(bufferedGeometries) {
             var symbol = new SimpleFillSymbol(
               SimpleFillSymbol.STYLE_SOLID,
@@ -201,16 +219,20 @@
             );
   
             array.forEach(bufferedGeometries, function(geometry) {
+              console.log(bufferedGeometries);
               var graphic = new Graphic(geometry, symbol);
               map.graphics.add(graphic);
+
             });
           }
+
          
           //-------------------------show coordinates
           map.on("load", function() {
             //after map loads, connect to listen to mouse move & drag events
             map.on("mouse-move", showCoordinates);
             map.on("mouse-drag", showCoordinates);
+
             function showCoordinates(evt) {
               //the map is in web mercator but display coordinates in geographic (lat, long)
               var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
@@ -218,6 +240,7 @@
               dom.byId("info").innerHTML = mp.x.toFixed(3) + ", " + mp.y.toFixed(3);
             }
           });
+
         //------ Input Long, Lat from user and display point
         var symbol = new SimpleMarkerSymbol(  
                 SimpleMarkerSymbol.STYLE_CIRCLE,  
@@ -231,6 +254,7 @@
              );  
       
         on(dom.byId("go"), "click", coordinates);  
+
         function coordinates() {  
           console.log("got here")  
             var lat = document.getElementById("sel_lat").value  
@@ -335,7 +359,7 @@ style="width:100%;height:100%;">
       <option value="UNIT_DEGREE">Degrees</option>
     </select><br />
     <button class="btn btn-primary mt-2 tool" type="button" id="clearGraphics" style="height:25px; padding-bottom: 25px">Clear Graphics</button>
-  
+    <button type="button" id="check">check Test</button>
     <span id="info"></span>
     <hr/>
     <div><b>Input coordinates</b></div>
@@ -345,6 +369,13 @@ style="width:100%;height:100%;">
        Tag Lat:<input id="sel_lat" type="text">  
       <br >  
       <button id="go">GO</button>
+
+      <br/><br/><hr/>
+      <div><b>Total forest area: </b> <span id="forestArea"></span> sq. km.</div>
+      <div><b>Total buffer area: </b> <span id="bufferArea"></span> sq. km.</div>
+      <div><b>Total buffer length: </b> <span id="bufferLength"></span> km.</div>
+    <div><b>Area of intersection: </b> <span id="resultArea"></span> sq. km.</div>
+
 
     <ul class="navbar-nav" style="margin-top:50px;">
         <li class="nav-item">
@@ -374,7 +405,6 @@ style="width:100%;height:100%;">
         </li>
         
       </ul>
-
   </div>
 
 </div>
