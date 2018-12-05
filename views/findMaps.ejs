@@ -60,10 +60,13 @@
 </script> -->
 <script>var dojoConfig = { parseOnLoad: true };</script>
 <script>
-  var map, tb;
+  var map, tb, INTERSECT_AREA;
+  var app = {};
+  app.printer = null;
   
   require([          
           "dojo/dom",
+          "dojo/dom-construct",
           "dojo/_base/array",
           "dojo/parser",
           "dojo/query",
@@ -75,6 +78,7 @@
           "esri/graphic",
     
           "esri/toolbars/draw",
+          "esri/dijit/Print",
     
           "esri/symbols/SimpleMarkerSymbol",
           "esri/symbols/SimpleLineSymbol",
@@ -89,19 +93,24 @@
           "esri/geometry/webMercatorUtils",
           "esri/geometry/Point",
 
+          "esri/tasks/PrintTemplate",
+          "esri/config",
+
           "dijit/layout/BorderContainer",
           "dijit/layout/ContentPane",
           "dijit/form/Button", 
           "dojo/domReady!"
           ],
-        function(dom, array, parser, query, on,
+        function(dom, dom_construct, array, parser, query, on,
                  Color, esriConfig, Map, Graphic,  
-                 Draw, 
+                 Draw, Print,
                  SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,
                  arcgisUtils, LayerList, FeatureLayer, 
-                 geometryEngine, normalizeUtils, webMercatorUtils, Point ){
+                 geometryEngine, normalizeUtils, webMercatorUtils, Point,
+                 PrintTemplate){
   
           parser.parse();
+          esriConfig.defaults.io.proxyUrl = "/proxy/";
   
          //Setup button click handlers
           on(dom.byId("clearGraphics"), "click", function(){
@@ -163,51 +172,52 @@
                break;
           };
   
-        //setup the buffer parameters
-        var graphic = new Graphic(geometry, symbol); //set geometry graphic
-        map.graphics.add(graphic);
+          //setup the buffer parameters
+          var graphic = new Graphic(geometry, symbol); //set geometry graphic
+          map.graphics.add(graphic);
 
-        var buffer_distance = [ dom.byId("distance").value ];
-        var buffer_unit = dom.byId("unit").value; 
-        var buffer_symbol = new SimpleFillSymbol(
-              SimpleFillSymbol.STYLE_SOLID,
-              new SimpleLineSymbol(
-                SimpleLineSymbol.STYLE_SOLID,
-                new Color([255,0,0,0.65]), 2
-              ),
-              new Color([255,0,0,0.35])
-            );
-            var buffSymFade = new SimpleFillSymbol(
-                SimpleFillSymbol.STYLE_SOLID, 
+          var buffer_distance = [ dom.byId("distance").value ];
+          var buffer_unit = dom.byId("unit").value; 
+          var buffer_symbol = new SimpleFillSymbol(
+                SimpleFillSymbol.STYLE_SOLID,
                 new SimpleLineSymbol(
-                    SimpleLineSymbol.STYLE_SOLID, 
-                    new Color([255, 255, 255, 0.4]), 10), null);
+                  SimpleLineSymbol.STYLE_SOLID,
+                  new Color([255,0,0,0.65]), 2
+                ),
+                new Color([255,0,0,0.35])
+              );
+              var buffSymFade = new SimpleFillSymbol(
+                  SimpleFillSymbol.STYLE_SOLID, 
+                  new SimpleLineSymbol(
+                      SimpleLineSymbol.STYLE_SOLID, 
+                      new Color([255, 255, 255, 0.4]), 10), null);
 
-        //geodesicBuffer
-        var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
-        map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
-        
-        //buffer calculations       
-        var bufferAreaUnit = dom.byId("area-unit").value;
-        var bufferLengthUnit = dom.byId("unit").value;
-        dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, bufferAreaUnit) + " "+bufferAreaUnit;
-        dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, bufferLengthUnit)+ " "+bufferLengthUnit;;
-        //Intersect
-        var forestLayerGeometry = ForestLayer.graphics[0].geometry;
-        
-        if(geometryEngine.intersects(geoBuffer, forestLayerGeometry)){
-            var intersectGeometry = geometryEngine.intersect(geoBuffer, forestLayerGeometry);
-            map.graphics.add(new Graphic(intersectGeometry, buffSymFade));
-            console.log(intersectGeometry);
+          //geodesicBuffer
+          var geoBuffer = new geometryEngine.buffer(geometry, buffer_distance, buffer_unit);
+          map.graphics.add(new Graphic(geoBuffer, buffer_symbol));
+          
+          //buffer calculations       
+          var bufferAreaUnit = dom.byId("area-unit").value;
+          var bufferLengthUnit = dom.byId("unit").value;
+          dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, bufferAreaUnit) + " "+bufferAreaUnit;
+          dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, bufferLengthUnit)+ " "+bufferLengthUnit;;
+          //Intersect
+          var forestLayerGeometry = ForestLayer.graphics[0].geometry;
+          
+          if(geometryEngine.intersects(geoBuffer, forestLayerGeometry)){
+              var intersectGeometry = geometryEngine.intersect(geoBuffer, forestLayerGeometry);
+              map.graphics.add(new Graphic(intersectGeometry, buffSymFade));
+              console.log(intersectGeometry);
+              INTERSECT_AREA = geometryEngine.planarArea(intersectGeometry, bufferAreaUnit);
 
-            dom.byId("resultArea").innerHTML = geometryEngine.planarArea(intersectGeometry, bufferAreaUnit) + " "+bufferAreaUnit;
-        }
-        else{
-            dom.byId("resultArea").innerHTML = 0;
-        }
+              dom.byId("resultArea").innerHTML = INTERSECT_AREA + " "+bufferAreaUnit;
+          }
+          else{
+              dom.byId("resultArea").innerHTML = 0;
+          }
     
     
-        }   
+        }//doBuffer ends
           
           // perform buffer related operations here, as buffer now created
           function showBuffer(bufferedGeometries) {
@@ -265,7 +275,47 @@
             var graphic = new Graphic(mp, symbol);  
             map.graphics.add(graphic);  
         }  
-          
+        
+        //------------------------- Print Map
+        app.printer = new Print({
+          map: map,
+          url: "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+        }, dom.byId("check"));
+        app.printer.startup();
+        app.printer.hide();
+
+        on(dom.byId("report_btn"), "click", function(){
+          dom.byId("report_btn").innerHTML = "generating report...";
+          var printTemplate = new PrintTemplate();
+          printTemplate.layout = "Letter ANSI A Landscape" ;
+          printTemplate.label = "Landscape (Image)";
+          printTemplate.format = "jpg";
+          printTemplate.layoutOptions = {
+                                        legendLayers: [],
+                                        scalebarUnit: "Miles",
+                                        titleText: "Proposed Road map",
+                                        };
+
+          printTemplate.exportOptions = {
+            width: 500,
+            height: 400,
+            dpi: 96
+          };
+          console.log(printTemplate);
+          app.printer.printMap(printTemplate);
+        });
+
+        app.printer.on('print-complete', function(evt){
+          console.log(evt.result.url);
+          dom.byId("report_btn").innerHTML = "Generate Report";
+          generate();
+        });
+
+        //----------------------------GENERATE Report
+        function generate(){
+          //--
+        }
+        
   
     });
   </script>
@@ -389,6 +439,8 @@ style="width:100%;height:100%;">
       <div><b>Total buffer length: </b> <span id="bufferLength"></span> </div>
     <div><b>Area of intersection: </b> <span id="resultArea"></span> </div>
 
+    <br/>
+    <button class="btn btn-primary mt-2" type="button" id="report_btn" style="height:25px; padding-bottom: 25px">Generate Report</button>
 
     <ul class="navbar-nav" style="margin-top:50px;">
         <li class="nav-item">
