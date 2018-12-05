@@ -77,6 +77,53 @@ app.post('/login',function(req,res){
     
 });
 
+app.post('/submit-tender',function(req,res){
+    console.log("Inside The post of submit tender");
+    console.log("Request body: ",req.body);
+        loc_latitude=req.body.loc_latitude;
+        loc_longitude=req.body.loc_longitude;
+        console.log("Latitude of the user",loc_latitude);
+        console.log("Longitude of the user",loc_longitude);
+
+      const newTender=new Tender({
+          name:req.body.projectName,
+          company:req.body.company,
+          forestArea:req.body.forestArea,
+          bufferArea:req.body.bufferArea,
+          bufferLength:req.body.bufferLength,
+          resultArea:req.body.resultArea,
+          Percentagecheck:req.body.Percentagecheck
+      })
+      newTender.save()
+        .then(console.log("New Tender saved"))
+        // res.redirect('/findMaps');
+
+      dataSend={
+          bufferArea:req.body.bufferArea,
+          resultArea:req.body.resultArea,
+          Percentagecheck:req.body.Percentagecheck,
+          acceptance:req.body.acceptance,
+          myurl:req.body.myurl
+      }
+
+      dataSend=JSON.stringify(dataSend);
+      
+      res.render('result',{
+          company:req.body.company,
+        bufferArea:req.body.bufferArea,
+        resultArea:req.body.resultArea,
+        Percentagecheck:req.body.Percentagecheck,
+        acceptance:req.body.acceptance,
+        myurl:req.body.myurl
+      });
+
+
+
+      
+
+        
+})
+
 //create  post
 app.post('/create',function(req,res){
     if(!req.session.user){
