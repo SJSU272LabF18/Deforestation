@@ -60,7 +60,11 @@
 </script> -->
 <script>var dojoConfig = { parseOnLoad: true };</script>
 <script>
-  var map, tb, INTERSECT_AREA;
+  var map, tb;
+  
+  var ROAD_BUFFER_LENGTH=0, ROAD_BUFFER_AREA=0, FOREST_AREA_SQ_KM=0, INTERSECT_AREA=0;
+  var MAP_IMG_URL;
+
   var app = {};
   app.printer = null;
   
@@ -199,8 +203,11 @@
           //buffer calculations       
           var bufferAreaUnit = dom.byId("area-unit").value;
           var bufferLengthUnit = dom.byId("unit").value;
-          dom.byId("bufferArea").innerHTML = geometryEngine.planarArea(geoBuffer, bufferAreaUnit) + " "+bufferAreaUnit;
-          dom.byId("bufferLength").innerHTML = geometryEngine.planarLength(geoBuffer, bufferLengthUnit)+ " "+bufferLengthUnit;;
+          ROAD_BUFFER_LENGTH = geometryEngine.planarLength(geoBuffer, bufferLengthUnit);
+          ROAD_BUFFER_AREA = geometryEngine.planarArea(geoBuffer, bufferAreaUnit);
+          FOREST_AREA_SQ_KM = geometryEngine.planarArea(ForestLayer.graphics[0].geometry, "square-kilometers");
+          dom.byId("bufferArea").innerHTML = ROAD_BUFFER_AREA + " "+bufferAreaUnit;
+          dom.byId("bufferLength").innerHTML = ROAD_BUFFER_LENGTH + " "+bufferLengthUnit;;
           //Intersect
           var forestLayerGeometry = ForestLayer.graphics[0].geometry;
           
@@ -306,13 +313,14 @@
         });
 
         app.printer.on('print-complete', function(evt){
+          MAP_IMG_URL = evt.result.url;
           console.log(evt.result.url);
           dom.byId("report_btn").innerHTML = "Generate Report";
           generate();
         });
 
         //----------------------------GENERATE Report
-        function generate(){
+        function generate(){ //KETAN WORK HERE.. 
           //--
         }
         
