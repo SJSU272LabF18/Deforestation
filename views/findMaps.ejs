@@ -207,7 +207,10 @@
           ROAD_BUFFER_AREA = geometryEngine.planarArea(geoBuffer, bufferAreaUnit);
           FOREST_AREA_SQ_KM = geometryEngine.planarArea(ForestLayer.graphics[0].geometry, "square-kilometers");
           dom.byId("bufferArea").innerHTML = ROAD_BUFFER_AREA + " "+bufferAreaUnit;
-          dom.byId("bufferLength").innerHTML = ROAD_BUFFER_LENGTH + " "+bufferLengthUnit;;
+          dom.byId("bufferLength").innerHTML = ROAD_BUFFER_LENGTH + " "+bufferLengthUnit;
+
+          ROAD_BUFFER_LENGTH = geometryEngine.planarLength(geoBuffer, "kilometers");
+          ROAD_BUFFER_AREA = geometryEngine.planarArea(geoBuffer, "square-kilometers");
           //Intersect
           var forestLayerGeometry = ForestLayer.graphics[0].geometry;
           
@@ -218,6 +221,7 @@
               INTERSECT_AREA = geometryEngine.planarArea(intersectGeometry, bufferAreaUnit);
 
               dom.byId("resultArea").innerHTML = INTERSECT_AREA + " "+bufferAreaUnit;
+              INTERSECT_AREA = geometryEngine.planarArea(intersectGeometry, "square-kilometers");
           }
           else{
               dom.byId("resultArea").innerHTML = 0;
