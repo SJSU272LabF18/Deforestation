@@ -324,8 +324,28 @@
         });
 
         //----------------------------GENERATE Report
-        function generate(){ //KETAN WORK HERE.. 
+        function generate(){ //---
           //--
+          dom.byId("FRAREA").value = FOREST_AREA_SQ_KM;
+          dom.byId("BFAREA").value = ROAD_BUFFER_AREA;
+          dom.byId("BFLENGTH").value = ROAD_BUFFER_LENGTH;
+          dom.byId("RSAREA").value = INTERSECT_AREA;
+          var percent_of_deforest = (INTERSECT_AREA/FOREST_AREA_SQ_KM)*100;
+          percent_of_deforest = percent_of_deforest.toFixed(2);
+          dom.byId("CHECKPERCENTAGE").value = percent_of_deforest;
+          dom.byId("mapUrl").value = MAP_IMG_URL;
+          console.log(percent_of_deforest);
+          var verdict;
+          if(percent_of_deforest < 0.3){
+            verdict = "Your tender has been accepted for further approval!";
+          }
+          else{
+            verdict = "Sorry, your tender cannot be passed further, as it exceeds deforestation limit";
+          }
+          dom.byId("acceptance").value = verdict;
+          var deforestation_area = INTERSECT_AREA * 0.35;
+          deforestation_area =deforestation_area.toFixed(2);
+          dom.byId("deforest").value = deforestation_area;
         }
         
   
@@ -346,40 +366,41 @@
                   <!-- <div id="viewDiv" style="height:600px;"></div> -->
                 <div class="card-body px-lg-5 py-lg-5" >
                           
-                          <form action="http://127.0.0.1:4500/submit-tender" method="post">
-                            <div class="form-group">
-                              <div class="input-group input-group-alternative mb-3">
-                                
-                                <input class="form-control" placeholder="Project Name" name="projectName" type="text">
-                              </div>
-                            </div>
+                  <form action="http://127.0.0.1:4500/submit-tender" method="post">
+                    <div class="form-group">
+                      <div class="input-group input-group-alternative mb-3">
+                        
+                        <input class="form-control" placeholder="Project Name" name="projectName" type="text">
+                      </div>
+                    </div>
 
-                            <div class="form-group">
-                                  <div class="input-group input-group-alternative mb-3">
-                                    
-                                    <input class="form-control" placeholder="Tender Company" name="company" type="text">
-                                  </div>
-                              </div>
-
-                            <div class="form-group">
-                              <div class="input-group input-group-alternative mb-3">
-                                
-                                <input class="form-control" placeholder="Enter the longitude of the position you want to start from" name="loc_longitude" type="text">
-                              </div>
-                            </div>
-                            <div class="form-group">
-                              <div class="input-group input-group-alternative">
-                                <div class="input-group-prepend">
-                                </div>
-                                <input class="form-control" placeholder="Enter the latitude of the position you want to start from" name="loc_latitude" type="text">
-                              </div>
-                            </div>
+                    <div class="form-group">
+                          <div class="input-group input-group-alternative mb-3">
                             
-                           
-                            <div class="text-center">
-                              <button type="submit" class="btn btn-primary mt-4">Submit your Tender</button>
-                            </div>
-                          </form>
+                            <input class="form-control" placeholder="Tender Company" name="company" type="text">
+                          </div>
+                      </div>
+
+                    <div class="form-group">
+                      <div class="input-group input-group-alternative mb-3">
+                        
+                        <input class="form-control" placeholder="Project Name" name="projectName" type="text">
+                      </div>
+                    </div>
+
+                    <input class="form-control" placeholder="Area" name="forestArea" id="FRAREA" type="hidden">
+                    <input class="form-control" placeholder="Buffer Area" name="bufferArea" id="BFAREA" type="hidden">      
+                    <input class="form-control" placeholder="Buffer Length" name="bufferLength" id="BFLENGTH" type="hidden">      
+                    <input class="form-control" placeholder="Result Area" name="resultArea" id="RSAREA" type="hidden">
+                    <input class="form-control" placeholder="acceptance" name="acceptance" id="acceptance" type="hidden">
+                    <input class="form-control" placeholder="Percentage" name="Percentagecheck" id="CHECKPERCENTAGE" type="hidden"> 
+                    <input class="form-control" placeholder="MapUrl" name="myurl" id="mapUrl" type="hidden">    
+                    <input class="form-control" placeholder="Deforestation" name="deforest" id="deforest" type="hidden">    
+                   
+                    <div class="text-center">
+                      <button type="submit" id="checkPercentage" class="btn btn-primary mt-4">Submit your Tender</button>
+                    </div>
+                  </form>
                         </div>
                 </div>
               </div>
@@ -454,34 +475,50 @@ style="width:100%;height:100%;">
     <br/>
     <button class="btn btn-primary mt-2" type="button" id="report_btn" style="height:25px; padding-bottom: 25px">Generate Report</button>
 
-    <ul class="navbar-nav" style="margin-top:50px;">
-        <li class="nav-item">
-          <a class="nav-link" href="/">
-            <i class="ni ni-tv-2 text-primary"></i> Dashboard
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/submit-tender">
-            <i class="ni ni-planet text-blue"></i> Submit your Tender
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="/findMaps">
-            <i class="ni ni-pin-3 text-orange"></i> Maps
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="../examples/profile.html">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="/">
+          <i class="ni ni-tv-2 text-primary"></i> Home
+        </a>
+      </li>
+      <!-- <li class="nav-item">
+        <a class="nav-link" href="/submit-tender">
+          <i class="ni ni-planet text-blue"></i> Submit your Tender
+        </a>
+      </li> -->
+      <li class="nav-item">
+          <a class="nav-link" href="/policy">
             <i class="ni ni-single-02 text-yellow"></i> Government Policies
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="../examples/tables.html">
-            <i class="ni ni-bullet-list-67 text-red"></i> Contact us
+
+      <li class="nav-item">
+        <a class="nav-link" href="/findMaps">
+          <i class="ni ni-pin-3 text-orange"></i> Submit Your Tender
+        </a>
+      </li>
+      
+      <!-- <li class="nav-item">
+          <a class="nav-link" href="/result">
+            <i class="ni ni-single-02 text-yellow"></i> Result
           </a>
-        </li>
-        
-      </ul>
+        </li> -->
+      <!-- <li class="nav-item">
+        <a class="nav-link" href="./examples/tables.html">
+          <i class="ni ni-bullet-list-67 text-red"></i> Contact us
+        </a>
+      </li> -->
+      <!-- <li class="nav-item">
+        <a class="nav-link" href="/login">
+          <i class="ni ni-key-25 text-info"></i> Login
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/register">
+          <i class="ni ni-circle-08 text-pink"></i> Register
+        </a>
+      </li> -->
+    </ul>
   </div>
 
 </div>

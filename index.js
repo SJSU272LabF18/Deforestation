@@ -35,8 +35,8 @@ mongoose.connect(db)
             .then(()=>{console.log("Connected to Mlab Mongodb")})
             .catch(err=>{console.log(err)});
 
-const User=require('./models/User')            
-
+const User=require('./models/User');            
+const Tender=require('./models/tender');
 var Users=[{
     "username":"admin",
     "password":"admin"
@@ -129,6 +129,58 @@ app.get('/findMaps',function(req,res){
 app.get('/register',function(req,res){
     res.render('register')
 });
+
+
+app.get('/policy',function(req,res){
+    res.render('policy')
+});
+
+//-----
+app.post('/submit-tender',function(req,res){
+    console.log("Inside The post of submit tender");
+    console.log("Request body: ",req.body);
+        loc_latitude=req.body.loc_latitude;
+        loc_longitude=req.body.loc_longitude;
+        console.log("Latitude of the user",loc_latitude);
+        console.log("Longitude of the user",loc_longitude);
+
+      const newTender=new Tender({
+          name:req.body.projectName,
+          company:req.body.company,
+          forestArea:req.body.forestArea,
+          bufferArea:req.body.bufferArea,
+          bufferLength:req.body.bufferLength,
+          resultArea:req.body.resultArea,
+          Percentagecheck:req.body.Percentagecheck
+      })
+      newTender.save()
+        .then(console.log("New Tender saved"))
+        // res.redirect('/findMaps');
+
+      dataSend={
+          bufferArea:req.body.bufferArea,
+          resultArea:req.body.resultArea,
+          Percentagecheck:req.body.Percentagecheck,
+          acceptance:req.body.acceptance,
+          myurl:req.body.myurl,
+          bufferLength:req.body.bufferLength
+      }
+
+      dataSend=JSON.stringify(dataSend);
+      
+      res.render('result',{
+          company:req.body.company,
+        bufferArea:req.body.bufferArea,
+        resultArea:req.body.resultArea,
+        Percentagecheck:req.body.Percentagecheck,
+        acceptance:req.body.acceptance,
+        bufferLength:req.body.bufferLength,
+        myurl:req.body.myurl,
+        deforest:req.body.deforest
+      });      
+});
+
+
 
 app.post('/register',function(req,res){
     console.log("Inside node of Register");
