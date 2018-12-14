@@ -23,6 +23,6 @@ Click here to see video tutorial:
 1. install node js
 2. clone/download the app
 3. go to project folder containing index.js and type: <b> node index.js </b>
-4. if you get module dependancy messages, run <b> npm install <module name> </b> and then run again
+4. if you get module dependancy messages, run <b> npm install \<module name\> </b> and then run again
 5. The app works on port 4500
  
