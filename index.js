@@ -51,10 +51,10 @@ var Students=[
 
 //routing to root 
 app.get('/',function(req,res){
-       
-    res.render('home',{
-        Students
-    });
+    res.render('findMaps');   
+    // res.render('home',{
+    //     Students
+    // });
   
 });
 
@@ -97,19 +97,17 @@ app.post('/create',function(req,res){
 
 //get to home
 app.get('/home',function(req,res){
-    if(!req.session.user)
-    {
-        res.redirect('/');
-    }else{
-        
-       
-        
-        res.render('home',{
-            Students
-        });
+    res.render('home',{
+        Students
+    });
+    // res.redirect('/');
     
-   
-    }
+    // }else{ 
+    //     res.render('home',{
+    //         Students
+    //     }); 
+    // }
+
 });
 
 //get to create
